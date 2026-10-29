@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Інтерактивний кросворд — Ікігай</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0e17 0%, #111827 50%, #0f172a 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container { max-width: 980px; width: 100%; }
+    header { text-align: center; margin-bottom: 22px; }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .subtitle { color: #94a3b8; font-size: 0.95rem; }
+    .main {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .grid-section { display: flex; flex-direction: column; align-items: center; }
+    .grid-wrapper {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    .crossword-grid {
+      display: grid;
+      grid-template-columns: repeat(13, 38px);
+      grid-template-rows: repeat(14, 38px);
+      gap: 2px;
+    }
+    .cell {
+      width: 38px; height: 38px;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cell.block { background: transparent; }
+    .cell.letter {
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 5px;
+      transition: all 0.15s ease;
+    }
+    .cell.letter:focus-within {
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
+    }
+    .cell.letter.correct { background: #064e3b; border-color: #10b981; }
+    .cell.letter.wrong { background: #450a0a; border-color: #ef4444; }
+    .cell.letter.center {
+      background: #1e1b4b;
+      border-color: #818cf8;
+    }
+    .cell.letter.center.correct { background: #312e81; border-color: #c4b5fd; }
+    .cell input {
+      width: 100%; height: 100%;
+      border: none; background: transparent;
+      color: #f8fafc;
+      font-size: 1.05rem; font-weight: 600;
+      text-align: center; text-transform: uppercase;
+      outline: none; caret-color: #818cf8;
+    }
+    .cell .number {
+      position: absolute; top: 1px; left: 2px;
+      font-size: 0.52rem; font-weight: 600;
+      color: #94a3b8; pointer-events: none;
+    }
+    .controls {
+      display: flex; gap: 10px; margin-top: 18px;
+      flex-wrap: wrap; justify-content: center;
+    }
+    button {
+      padding: 11px 20px; border: none; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s ease; font-family: inherit;
+    }
+    .btn-check {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+    }
+    .btn-check:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+    .btn-reveal { background: #334155; color: #e2e8f0; }
+    .btn-reveal:hover { background: #475569; }
+    .btn-clear { background: transparent; border: 2px solid #475569; color: #94a3b8; }
+    .btn-clear:hover { border-color: #64748b; color: #e2e8f0; }
+    .clues { flex: 1; min-width: 260px; max-width: 340px; }
+    .clue-group {
+      background: #1e293b; border-radius: 12px;
+      padding: 16px; margin-bottom: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .clue-group h3 {
+      font-size: 0.8rem; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #64748b; margin-bottom: 12px;
+    }
+    .clue { margin-bottom: 12px; line-height: 1.45; font-size: 0.9rem; color: #cbd5e1; }
+    .clue strong { color: #a5b4fc; margin-right: 6px; }
+    .status { margin-top: 16px; text-align: center; font-size: 1rem; font-weight: 600; min-height: 26px; }
+    .status.success { color: #34d399; }
+    .status.error { color: #f87171; }
+    .legend { margin-top: 22px; text-align: center; color: #64748b; font-size: 0.85rem; }
+    .ikigai-hint {
+      margin-top: 14px;
+      background: linear-gradient(135deg, #1e1b4b, #312e81);
+      border-radius: 12px; padding: 16px; text-align: center;
+      border: 1px solid #4338ca;
+    }
+    .ikigai-hint h3 { color: #c4b5fd; margin-bottom: 8px; font-size: 0.95rem; }
+    .ikigai-hint p { color: #a5b4fc; font-size: 0.88rem; line-height: 1.55; }
+    @media (max-width: 700px) {
+      .crossword-grid { grid-template-columns: repeat(13, 30px); grid-template-rows: repeat(14, 30px); }
+      .cell { width: 30px; height: 30px; }
+      .cell input { font-size: 0.9rem; }
+      h1 { font-size: 1.45rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>✦ ІКІГАЙ Кросворд</h1>
+      <p class="subtitle">Знайди своє «навіщо» — розгадай слова з діаграми</p>
+    </header>
+
+    <div class="main">
+      <div class="grid-section">
+        <div class="grid-wrapper">
+          <div class="crossword-grid" id="grid">
+            <!-- Row 0 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter"><span class="number">1</span><input maxlength="1" data-answer="П"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 1 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="О"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 2 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Т"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 3 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Р"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 4: ЛЮБЛЮ -->
+            <div class="cell block"></div>
+            <div class="cell letter"><span class="number">2</span><input maxlength="1" data-answer="Л"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Ю"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Б"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Л"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Ю"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="І"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 5 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><span class="number">3</span><input maxlength="1" data-answer="В"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Б"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 6: ІКІГАЙ -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter center"><span class="number">4</span><input maxlength="1" data-answer="І"></div>
+            <div class="cell letter center"><input maxlength="1" data-answer="К"></div>
+            <div class="cell letter center"><input maxlength="1" data-answer="І"></div>
+            <div class="cell letter center"><input maxlength="1" data-answer="Г"></div>
+            <div class="cell letter center"><input maxlength="1" data-answer="А"></div>
+            <div class="cell letter center"><input maxlength="1" data-answer="Й"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 7 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="М"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Н"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 8 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="І"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="О"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 9 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Ю"></div>
+            <div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="С"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 10: ПЛАТЯТЬГРОШІ -->
+            <div class="cell letter"><span class="number">5</span><input maxlength="1" data-answer="П"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Л"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="А"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Т"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Я"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Т"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Ь"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Г"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Р"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="О"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Ш"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="І"></div>
+            <div class="cell block"></div>
+
+            <!-- Row 11 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="В"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 12 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="І"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+
+            <!-- Row 13 -->
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell letter"><input maxlength="1" data-answer="Т"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+            <div class="cell block"></div><div class="cell block"></div><div class="cell block"></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn-check" onclick="checkAnswers()">Перевірити</button>
+          <button class="btn-reveal" onclick="revealAnswers()">Показати відповіді</button>
+          <button class="btn-clear" onclick="clearGrid()">Очистити</button>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="clues">
+        <div class="clue-group">
+          <h3>По горизонталі</h3>
+          <div class="clue">
+            <strong>2.</strong> Коли серце співає, а час зупиняється — це те, що ти… (6)
+          </div>
+          <div class="clue">
+            <strong>4.</strong> Японський секрет щасливого життя, твоя «причина прокидатися вранці» (6)
+          </div>
+          <div class="clue">
+            <strong>5.</strong> Те, за що світ готовий відкривати гаманець (словосполучення разом, 12)
+          </div>
+        </div>
+
+        <div class="clue-group">
+          <h3>По вертикалі</h3>
+          <div class="clue">
+            <strong>1.</strong> Те, чого чекає планета саме від тебе (словосполучення разом, 13)
+          </div>
+          <div class="clue">
+            <strong>3.</strong> Твої суперсили, те, що виходить легко і красиво (4)
+          </div>
+        </div>
+
+        <div class="ikigai-hint">
+          <h3>💡 Нагадування з діаграми</h3>
+          <p>
+            <strong>Люблю</strong> → захоплення<br>
+            <strong>Вмію</strong> → сильні сторони<br>
+            <strong>Потрібно світу</strong> → користь<br>
+            <strong>Платять гроші</strong> → цінність на ринку<br>
+            Перетин усіх чотирьох = <strong>ІКІГАЙ</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <p class="legend">Словосполучення йдуть підряд без пробілів • Фіолетові клітинки — ІКІГАЙ</p>
+  </div>
+
+  <script>
+    const inputs = document.querySelectorAll('.cell.letter input');
+
+    inputs.forEach((input, index) => {
+      input.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+        e.target.parentElement.classList.remove('correct', 'wrong');
+        if (e.target.value && index < inputs.length - 1) {
+          inputs[index + 1].focus();
+        }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) {
+          inputs[index - 1].focus();
+        }
+      });
+    });
+
+    function checkAnswers() {
+      let allCorrect = true, filled = 0;
+      inputs.forEach(input => {
+        const cell = input.parentElement;
+        const userVal = input.value.toUpperCase().trim();
+        const answer = input.dataset.answer;
+        cell.classList.remove('correct', 'wrong');
+        if (userVal) {
+          filled++;
+          if (userVal === answer) cell.classList.add('correct');
+          else { cell.classList.add('wrong'); allCorrect = false; }
+        } else allCorrect = false;
+      });
+      const status = document.getElementById('status');
+      if (filled === 0) {
+        status.textContent = 'Заповни хоча б кілька клітинок ✍️';
+        status.className = 'status';
+      } else if (allCorrect) {
+        status.textContent = '🎉 Вітаю! Ти знайшов свій Ікігай!';
+        status.className = 'status success';
+      } else {
+        status.textContent = 'Є помилки або порожні клітинки. Спробуй ще!';
+        status.className = 'status error';
+      }
+    }
+
+    function revealAnswers() {
+      inputs.forEach(input => {
+        input.value = input.dataset.answer;
+        input.parentElement.classList.remove('wrong');
+        input.parentElement.classList.add('correct');
+      });
+      document.getElementById('status').textContent = 'Відповіді відкрито ✨';
+      document.getElementById('status').className = 'status success';
+    }
+
+    function clearGrid() {
+      inputs.forEach(input => {
+        input.value = '';
+        input.parentElement.classList.remove('correct', 'wrong');
+      });
+      document.getElementById('status').textContent = '';
+      document.getElementById('status').className = 'status';
+      if (inputs[0]) inputs[0].focus();
+    }
+
+    window.onload = () => { if (inputs[0]) inputs[0].focus(); };
+  </script>
+</body>
+</html>
